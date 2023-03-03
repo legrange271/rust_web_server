@@ -4,6 +4,9 @@ use std::io::prelude::*;
 use std::thread;
 use std::time::Duration;
 
+// Here we moved lib.rs to outside and main in bin to allow lib.rs to be a main crate which we can derive stuff from
+use web_server::ThreadPool;
+
 fn main() {
     // Here we set up a listener to read from the stream, the tcp listener looks for connections on a specific port
     let listener = TcpListener::bind("127.0.0.1:7878");
@@ -12,10 +15,20 @@ fn main() {
         Err(e) => panic!("Listener not found corerctly: {}", e)
     };
 
+    let pool = ThreadPool::new(4);
+
     // Listen to incoming streams and handle the connections
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-        handle_connection(stream)
+        
+
+        // Naive approach to spawning threads - this will create one for each new entry - however this would eat up resources quick
+        // thread::spawn(|| {
+        //     handle_connection(stream);
+        // });
+        pool.execute(|| {
+            handle_connection(stream);
+        });
     } 
 }
 
